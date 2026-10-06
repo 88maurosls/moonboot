@@ -11,10 +11,10 @@ from openpyxl.styles import Alignment, Font, PatternFill
 
 st.set_page_config(page_title="Moon Boot PDF to Excel", layout="wide")
 st.title("Moon Boot PDF to Excel")
-st.write("v1.0 by MM")
+st.write("v1.1 by MM")
 
 
-STATIC_COLS = ["CODICE", "COLORE", "DESCRIZIONE", "PREZZO WHS", "PREZZO RTL"]
+STATIC_COLS = ["CODICE", "COLORE", "ART", "DESCRIZIONE", "PREZZO WHS", "PREZZO RTL"]
 
 
 def normalize_text(value: str) -> str:
@@ -168,7 +168,7 @@ def parse_header_words(header_words):
             variante = normalize_text(" ".join(tokens[var_idx + 1:]))
 
     descrizione = variante or articolo
-    return codice, colore, descrizione
+    return codice, colore, articolo, descrizione
 
 
 def extract_retail_price(block_words, header_top):
@@ -283,7 +283,7 @@ def parse_product_block(block_words, header_top):
         key=lambda x: x["x0"],
     )
 
-    codice, colore, descrizione = parse_header_words(header_words)
+    codice, colore, articolo, descrizione = parse_header_words(header_words)
     if not codice:
         return None, []
 
@@ -297,6 +297,7 @@ def parse_product_block(block_words, header_top):
     record = {
         "CODICE": codice,
         "COLORE": colore,
+        "ART": articolo,
         "DESCRIZIONE": descrizione,
         "PREZZO WHS": None,
         "PREZZO RTL": prezzo_rtl,
@@ -460,6 +461,8 @@ def dataframe_to_excel_bytes(df: pd.DataFrame) -> bytes:
                 max_len = max(max_len, len(cell_value))
 
             width = min(max(max_len + 2, 10), 42)
+            if col[0].value == "ART":
+                width = min(max(width, 20), 35)
             if col[0].value == "DESCRIZIONE":
                 width = min(max(width, 28), 45)
             ws.column_dimensions[col_letter].width = width
@@ -580,4 +583,3 @@ if uploaded_files:
             file_name=output_filename,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
-
